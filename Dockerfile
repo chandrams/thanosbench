@@ -1,4 +1,4 @@
-FROM golang:1.14.2-alpine3.11 as builder
+FROM golang:1.22.4-alpine3.20 as builder
 WORKDIR $GOPATH/src/github.com/thanos-io/thanosbench
 # Change in the docker context invalidates the cache so to leverage docker
 # layer caching, moving update and installing apk packages above COPY cmd
