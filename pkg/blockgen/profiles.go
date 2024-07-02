@@ -104,6 +104,18 @@ var (
 			176 * time.Hour,
 			2 * time.Hour,
 		}, 1, 5),
+		"kruize-15d-tiny": kruize([]time.Duration{
+			// 15 days, from newest to oldest.
+			2 * time.Hour,
+			2 * time.Hour,
+			8 * time.Hour,
+			8 * time.Hour,
+			72 * time.Hour,
+			72 * time.Hour,
+			72 * time.Hour,
+			72 * time.Hour,
+			52 * time.Hour,
+		}, 1, 8),
 		"continuous-365d-tiny": continuous([]time.Duration{
 			// 1y days, from newest to oldest.
 			2 * time.Hour,
@@ -267,6 +279,122 @@ func continuous(ranges []time.Duration, apps int, metricsPerApp int) PlanFn {
 				s.Labels = labels.Labels{
 					{Name: "__name__", Value: fmt.Sprintf("continuous_app_metric%d", i)},
 				}
+				s.MinTime = mint
+				s.MaxTime = maxt
+				b.Series = append(b.Series, s)
+			}
+
+			if err := blockEncoder(b); err != nil {
+				return err
+			}
+			maxt = mint
+		}
+		return nil
+	}
+}
+
+func kruize(ranges []time.Duration, apps int, metricsPerApp int) PlanFn {
+	return func(ctx context.Context, maxTime model.TimeOrDurationValue, extLset labels.Labels, blockEncoder func(BlockSpec) error) error {
+
+		// Metric names
+		metrics := [8]string{"container_cpu_usage_seconds_total", "container_cpu_cfs_throttled_seconds_total", "kube_pod_container_resource_limits_cpu",
+					"kube_pod_container_resource_requests_cpu", "kube_pod_container_resource_limits_memory", "kube_pod_container_resource_requests_memory",
+					"container_memory_working_set_bytes", "container_memory_rss"}
+	
+		max:= map[string]float64 {"container_cpu_usage_seconds_total": 28, "container_cpu_cfs_throttled_seconds_total": 2, "kube_pod_container_resource_limits_cpu": 32,
+                                        "kube_pod_container_resource_requests_cpu":16, "kube_pod_container_resource_limits_memory": 2048, 
+					"kube_pod_container_resource_requests_memory": 1024, "container_memory_working_set_bytes": 2000, "container_memory_rss": 512}
+
+		min:= map[string]float64 {"container_cpu_usage_seconds_total": 2, "container_cpu_cfs_throttled_seconds_total": 0, "kube_pod_container_resource_limits_cpu": 4,
+                                        "kube_pod_container_resource_requests_cpu":1, "kube_pod_container_resource_limits_memory": 1024, 
+					"kube_pod_container_resource_requests_memory": 512, "container_memory_working_set_bytes": 100, "container_memory_rss": 50}
+	
+		jitter:= map[string]float64 {"container_cpu_usage_seconds_total": 2, "container_cpu_cfs_throttled_seconds_total": 1, "kube_pod_container_resource_limits_cpu": 3,
+                                        "kube_pod_container_resource_requests_cpu":2, "kube_pod_container_resource_limits_memory": 20, 
+					"kube_pod_container_resource_requests_memory": 10, "container_memory_working_set_bytes": 20, "container_memory_rss": 5}
+
+		// Align timestamps as Prometheus would do.
+		maxt := rangeForTimestamp(maxTime.PrometheusTimestamp(), durToMilis(2*time.Hour))
+
+
+		for _, r := range ranges {
+			mint := maxt - durToMilis(r) + 1
+
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+
+			b := BlockSpec{
+				Meta: metadata.Meta{
+					BlockMeta: tsdb.BlockMeta{
+						MaxTime:    maxt,
+						MinTime:    mint,
+						Compaction: tsdb.BlockMetaCompaction{Level: 1},
+						Version:    1,
+					},
+					Thanos: metadata.Thanos{
+						Labels:     extLset.Map(),
+						Downsample: metadata.ThanosDownsample{Resolution: 0},
+						Source:     "blockgen",
+					},
+				},
+			}
+
+			
+			for i := 0; i < metricsPerApp; i++ {
+				
+				metric := metrics[i]
+	
+				// All our series are gauges.
+				common := SeriesSpec{
+					Targets: apps,
+					Type:    Gauge,
+					Characteristics: seriesgen.Characteristics{
+						Max:            max[metric],
+						Min:            min[metric],
+						Jitter:         jitter[metric],
+						ScrapeInterval: 15 * time.Second,
+						ChangeInterval: 1 * time.Hour,
+					},
+				}
+
+				s := common
+
+				s.Labels = labels.Labels{
+					{Name: "__name__", Value: metrics[i]},
+					{Name: "workload", Value: "tfb-qrh-sample"},
+					{Name: "workload_type", Value: "deployment"},
+					{Name: "container", Value: "tfb-server"},
+					{Name: "image", Value: "kruize/tfb-qrh:1.13.2.F_et17"},
+					{Name: "namespace", Value: "tfb"},
+				}
+
+				if metrics[i] == "kube_pod_container_resource_limits_cpu" {
+					s.Labels = labels.Labels{
+						{Name: "__name__", Value: "kube_pod_container_resource_limits"},
+						{Name: "workload", Value: "tfb-qrh-sample"},
+						{Name: "workload_type", Value: "deployment"},
+						{Name: "container", Value: "tfb-server"},
+						{Name: "image", Value: "kruize/tfb-qrh:1.13.2.F_et17"},
+						{Name: "namespace", Value: "tfb"},
+						{Name: "resource", Value: "cpu"},
+						{Name: "unit", Value: "core"},
+					}
+				}
+
+				if metrics[i] == "kube_pod_container_resource_requests_cpu" {
+					s.Labels = labels.Labels{
+						{Name: "__name__", Value: "kube_pod_container_resource_requests"},
+						{Name: "workload", Value: "tfb-qrh-sample"},
+						{Name: "workload_type", Value: "deployment"},
+						{Name: "container", Value: "tfb-server"},
+						{Name: "image", Value: "kruize/tfb-qrh:1.13.2.F_et17"},
+						{Name: "namespace", Value: "tfb"},
+						{Name: "resource", Value: "cpu"},
+						{Name: "unit", Value: "core"},
+					}
+				}
+				
 				s.MinTime = mint
 				s.MaxTime = maxt
 				b.Series = append(b.Series, s)
