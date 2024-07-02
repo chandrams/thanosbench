@@ -50,11 +50,18 @@ build: check-git deps $(PROMU)
 	@echo ">> building binaries $(GOBIN)"
 	@$(PROMU) build --prefix $(PREFIX)
 
-# crossbuild builds all binaries for all platforms.
+GIT_BRANCH=$(shell $(GIT) rev-parse --abbrev-ref HEAD)
 .PHONY: crossbuild
-crossbuild: $(PROMU)
+crossbuild: ## Builds all binaries for all platforms.
+ifeq ($(GIT_BRANCH), master)
+crossbuild: | $(PROMU)
+	@echo ">> crossbuilding some binaries"
+	$(PROMU) crossbuild -v -p linux/amd64
+else
+crossbuild: | $(PROMU)
 	@echo ">> crossbuilding all binaries"
 	$(PROMU) crossbuild -v
+endif
 
 .PHONY: gen
 gen:
@@ -84,8 +91,8 @@ deps:
 # docker builds docker with no tag.
 .PHONY: docker
 docker: build
-	@echo ">> building docker image 'thanosbench'"
-	@docker build -t "thanosbench" .
+	@echo ">> building docker image"
+	@docker build --load -t $(DOCKER_IMAGE_REPO):$(DOCKER_IMAGE_TAG) .
 
 # docker-push pushes docker image build under `thanos` to "$(DOCKER_IMAGE_REPO):$(DOCKER_IMAGE_TAG)"
 .PHONY: docker-push
