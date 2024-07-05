@@ -115,7 +115,43 @@ var (
 			72 * time.Hour,
 			72 * time.Hour,
 			52 * time.Hour,
-		}, 1, 8),
+		}, 1, 1, 8),
+		"kruize-15d-small": kruize([]time.Duration{
+			// 15 days, from newest to oldest.
+			2 * time.Hour,
+			2 * time.Hour,
+			8 * time.Hour,
+			8 * time.Hour,
+			72 * time.Hour,
+			72 * time.Hour,
+			72 * time.Hour,
+			72 * time.Hour,
+			52 * time.Hour,
+		}, 10, 10, 8),
+		"kruize-15d-medium": kruize([]time.Duration{
+			// 15 days, from newest to oldest.
+			2 * time.Hour,
+			2 * time.Hour,
+			8 * time.Hour,
+			8 * time.Hour,
+			72 * time.Hour,
+			72 * time.Hour,
+			72 * time.Hour,
+			72 * time.Hour,
+			52 * time.Hour,
+		}, 100, 50, 8),
+		"kruize-15d-large": kruize([]time.Duration{
+			// 15 days, from newest to oldest.
+			2 * time.Hour,
+			2 * time.Hour,
+			8 * time.Hour,
+			8 * time.Hour,
+			72 * time.Hour,
+			72 * time.Hour,
+			72 * time.Hour,
+			72 * time.Hour,
+			52 * time.Hour,
+		}, 100, 100, 8),
 		"continuous-365d-tiny": continuous([]time.Duration{
 			// 1y days, from newest to oldest.
 			2 * time.Hour,
@@ -293,7 +329,7 @@ func continuous(ranges []time.Duration, apps int, metricsPerApp int) PlanFn {
 	}
 }
 
-func kruize(ranges []time.Duration, apps int, metricsPerApp int) PlanFn {
+func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int) PlanFn {
 	return func(ctx context.Context, maxTime model.TimeOrDurationValue, extLset labels.Labels, blockEncoder func(BlockSpec) error) error {
 
 		// Metric names
@@ -316,6 +352,7 @@ func kruize(ranges []time.Duration, apps int, metricsPerApp int) PlanFn {
 		// Align timestamps as Prometheus would do.
 		maxt := rangeForTimestamp(maxTime.PrometheusTimestamp(), durToMilis(2*time.Hour))
 
+	
 
 		for _, r := range ranges {
 			mint := maxt - durToMilis(r) + 1
@@ -340,64 +377,96 @@ func kruize(ranges []time.Duration, apps int, metricsPerApp int) PlanFn {
 				},
 			}
 
-			
-			for i := 0; i < metricsPerApp; i++ {
-				
-				metric := metrics[i]
+			for k := 0; k < namespaces; k++ {
+				for j := 0; j < apps; j++ {
+
+					for i := 0; i < metricsPerApp; i++ {
+						
+						metric := metrics[i]
 	
-				// All our series are gauges.
-				common := SeriesSpec{
-					Targets: apps,
-					Type:    Gauge,
-					Characteristics: seriesgen.Characteristics{
-						Max:            max[metric],
-						Min:            min[metric],
-						Jitter:         jitter[metric],
-						ScrapeInterval: 15 * time.Second,
-						ChangeInterval: 1 * time.Hour,
-					},
-				}
+						// All our series are gauges.
+						common := SeriesSpec{
+							Targets: apps,
+							Type:    Gauge,
+							Characteristics: seriesgen.Characteristics{
+								Max:            max[metric],
+								Min:            min[metric],
+								Jitter:         jitter[metric],
+								ScrapeInterval: 15 * time.Second,
+								ChangeInterval: 1 * time.Hour,
+							},
+						}
 
-				s := common
+						s := common
 
-				s.Labels = labels.Labels{
-					{Name: "__name__", Value: metrics[i]},
-					{Name: "workload", Value: "tfb-qrh-sample"},
-					{Name: "workload_type", Value: "deployment"},
-					{Name: "container", Value: "tfb-server"},
-					{Name: "image", Value: "kruize/tfb-qrh:1.13.2.F_et17"},
-					{Name: "namespace", Value: "tfb"},
-				}
+						s.Labels = labels.Labels{
+							{Name: "__name__", Value: metric},
+							{Name: "workload", Value: fmt.Sprintf("tfb-qrh-sample-%d", j)},
+							{Name: "workload_type", Value: "deployment"},
+							{Name: "container", Value: fmt.Sprintf("tfb-%d", j)},
+							{Name: "image", Value: "kruize/tfb-qrh:1.13.2.F_et17"},
+							{Name: "namespace", Value: fmt.Sprintf("msc-%d", k)},
+						}
 
-				if metrics[i] == "kube_pod_container_resource_limits_cpu" {
-					s.Labels = labels.Labels{
-						{Name: "__name__", Value: "kube_pod_container_resource_limits"},
-						{Name: "workload", Value: "tfb-qrh-sample"},
-						{Name: "workload_type", Value: "deployment"},
-						{Name: "container", Value: "tfb-server"},
-						{Name: "image", Value: "kruize/tfb-qrh:1.13.2.F_et17"},
-						{Name: "namespace", Value: "tfb"},
-						{Name: "resource", Value: "cpu"},
-						{Name: "unit", Value: "core"},
+						if metrics[i] == "kube_pod_container_resource_limits_cpu" {
+							s.Labels = labels.Labels{
+								{Name: "__name__", Value: "kube_pod_container_resource_limits"},
+								{Name: "workload", Value: fmt.Sprintf("tfb-qrh-sample-%d", j)},
+								{Name: "workload_type", Value: "deployment"},
+								{Name: "container", Value: fmt.Sprintf("tfb-%d", j)},
+								{Name: "workload_type", Value: "deployment"},
+								{Name: "image", Value: "kruize/tfb-qrh:1.13.2.F_et17"},
+								{Name: "namespace", Value: fmt.Sprintf("msc-%d", k)},
+								{Name: "resource", Value: "cpu"},
+								{Name: "unit", Value: "core"},
+							}
+						}
+
+						if metrics[i] == "kube_pod_container_resource_requests_cpu" {
+							s.Labels = labels.Labels{
+								{Name: "__name__", Value: "kube_pod_container_resource_requests"},
+								{Name: "workload", Value: fmt.Sprintf("tfb-qrh-sample-%d", j)},
+								{Name: "workload_type", Value: "deployment"},
+								{Name: "container", Value: fmt.Sprintf("tfb-%d", j)},
+								{Name: "image", Value: "kruize/tfb-qrh:1.13.2.F_et17"},
+								{Name: "namespace", Value: fmt.Sprintf("msc-%d", k)},
+								{Name: "resource", Value: "cpu"},
+								{Name: "unit", Value: "core"},
+							}
+						}
+
+						if metrics[i] == "kube_pod_container_resource_limits_memory" {
+							s.Labels = labels.Labels{
+								{Name: "__name__", Value: "kube_pod_container_resource_limits"},
+								{Name: "workload", Value: fmt.Sprintf("tfb-qrh-sample-%d", j)},
+								{Name: "workload_type", Value: "deployment"},
+								{Name: "container", Value: fmt.Sprintf("tfb-%d", j)},
+								{Name: "workload_type", Value: "deployment"},
+								{Name: "image", Value: "kruize/tfb-qrh:1.13.2.F_et17"},
+								{Name: "namespace", Value: fmt.Sprintf("msc-%d", k)},
+								{Name: "resource", Value: "memory"},
+								{Name: "unit", Value: "bytes"},
+							}
+						}
+
+						if metrics[i] == "kube_pod_container_resource_requests_memory" {
+							s.Labels = labels.Labels{
+								{Name: "__name__", Value: "kube_pod_container_resource_requests"},
+								{Name: "workload", Value: fmt.Sprintf("tfb-qrh-sample-%d", j)},
+								{Name: "workload_type", Value: "deployment"},
+								{Name: "container", Value: fmt.Sprintf("tfb-%d", j)},
+								{Name: "image", Value: "kruize/tfb-qrh:1.13.2.F_et17"},
+								{Name: "namespace", Value: fmt.Sprintf("msc-%d", k)},
+								{Name: "resource", Value: "memory"},
+								{Name: "unit", Value: "bytes"},
+							}
+						}
+					
+						s.MinTime = mint
+						s.MaxTime = maxt
+						b.Series = append(b.Series, s)
 					}
 				}
-
-				if metrics[i] == "kube_pod_container_resource_requests_cpu" {
-					s.Labels = labels.Labels{
-						{Name: "__name__", Value: "kube_pod_container_resource_requests"},
-						{Name: "workload", Value: "tfb-qrh-sample"},
-						{Name: "workload_type", Value: "deployment"},
-						{Name: "container", Value: "tfb-server"},
-						{Name: "image", Value: "kruize/tfb-qrh:1.13.2.F_et17"},
-						{Name: "namespace", Value: "tfb"},
-						{Name: "resource", Value: "cpu"},
-						{Name: "unit", Value: "core"},
-					}
-				}
-				
-				s.MinTime = mint
-				s.MaxTime = maxt
-				b.Series = append(b.Series, s)
 			}
 
 			if err := blockEncoder(b); err != nil {
