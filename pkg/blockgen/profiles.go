@@ -392,7 +392,7 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 								Max:            max[metric],
 								Min:            min[metric],
 								Jitter:         jitter[metric],
-								ScrapeInterval: 15 * time.Second,
+								ScrapeInterval: 30 * time.Second,
 								ChangeInterval: 1 * time.Hour,
 							},
 						}
