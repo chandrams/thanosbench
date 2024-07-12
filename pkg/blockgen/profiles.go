@@ -127,7 +127,7 @@ var (
 			72 * time.Hour,
 			72 * time.Hour,
 			52 * time.Hour,
-		}, 10, 10, 8),
+		}, 20, 50, 8),
 		"kruize-15d-medium": kruize([]time.Duration{
 			// 15 days, from newest to oldest.
 			2 * time.Hour,
@@ -383,15 +383,18 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 					for i := 0; i < metricsPerApp; i++ {
 						
 						metric := metrics[i]
+						max_value := max[metric] * 1000000
+						min_value := min[metric] * 1000000
+						jitter_value := jitter[metric] * 1000000
 	
 						// All our series are gauges.
 						common := SeriesSpec{
-							Targets: apps,
+							Targets: 1,
 							Type:    Gauge,
 							Characteristics: seriesgen.Characteristics{
-								Max:            max[metric],
-								Min:            min[metric],
-								Jitter:         jitter[metric],
+								Max:            max_value,
+								Min:            min_value,
+								Jitter:         jitter_value,
 								ScrapeInterval: 30 * time.Second,
 								ChangeInterval: 1 * time.Hour,
 							},
