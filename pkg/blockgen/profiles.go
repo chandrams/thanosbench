@@ -116,7 +116,7 @@ var (
 			72 * time.Hour,
 			52 * time.Hour,
 		}, 1, 1, 8),
-		"kruize-15d-small": kruize([]time.Duration{
+		"kruize-15d-1k": kruize([]time.Duration{
 			// 15 days, from newest to oldest.
 			2 * time.Hour,
 			2 * time.Hour,
@@ -128,7 +128,7 @@ var (
 			72 * time.Hour,
 			52 * time.Hour,
 		}, 20, 50, 8),
-		"kruize-15d-medium": kruize([]time.Duration{
+		"kruize-15d-3k": kruize([]time.Duration{
 			// 15 days, from newest to oldest.
 			2 * time.Hour,
 			2 * time.Hour,
@@ -139,8 +139,20 @@ var (
 			72 * time.Hour,
 			72 * time.Hour,
 			52 * time.Hour,
-		}, 100, 50, 8),
-		"kruize-15d-large": kruize([]time.Duration{
+		}, 30, 100, 8),
+		"kruize-15d-5k": kruize([]time.Duration{
+			// 15 days, from newest to oldest.
+			2 * time.Hour,
+			2 * time.Hour,
+			8 * time.Hour,
+			8 * time.Hour,
+			72 * time.Hour,
+			72 * time.Hour,
+			72 * time.Hour,
+			72 * time.Hour,
+			52 * time.Hour,
+		}, 50, 100, 8),
+		"kruize-15d-10k": kruize([]time.Duration{
 			// 15 days, from newest to oldest.
 			2 * time.Hour,
 			2 * time.Hour,
