@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"time"
+	"strings"
 
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/timestamp"
@@ -398,11 +399,16 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 						max_value := max[metric] * 1000000
 						min_value := min[metric] * 1000000
 						jitter_value := jitter[metric] * 1000000
+
+						metric_type := Gauge
+						if strings.Contains(metric, "total") {
+							metric_type = Counter
+						}
 	
 						// All our series are gauges.
 						common := SeriesSpec{
 							Targets: 1,
-							Type:    Gauge,
+							Type:    metric_type,
 							Characteristics: seriesgen.Characteristics{
 								Max:            max_value,
 								Min:            min_value,
@@ -419,6 +425,7 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 							{Name: "workload", Value: fmt.Sprintf("tfb-qrh-sample-%d", j)},
 							{Name: "workload_type", Value: "deployment"},
 							{Name: "container", Value: fmt.Sprintf("tfb-%d", j)},
+							{Name: "pod", Value: fmt.Sprintf("pod-%d", j)},
 							{Name: "image", Value: "kruize/tfb-qrh:1.13.2.F_et17"},
 							{Name: "namespace", Value: fmt.Sprintf("msc-%d", k)},
 						}
@@ -429,6 +436,7 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 								{Name: "workload", Value: fmt.Sprintf("tfb-qrh-sample-%d", j)},
 								{Name: "workload_type", Value: "deployment"},
 								{Name: "container", Value: fmt.Sprintf("tfb-%d", j)},
+								{Name: "pod", Value: fmt.Sprintf("pod-%d", j)},
 								{Name: "workload_type", Value: "deployment"},
 								{Name: "image", Value: "kruize/tfb-qrh:1.13.2.F_et17"},
 								{Name: "namespace", Value: fmt.Sprintf("msc-%d", k)},
@@ -443,6 +451,7 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 								{Name: "workload", Value: fmt.Sprintf("tfb-qrh-sample-%d", j)},
 								{Name: "workload_type", Value: "deployment"},
 								{Name: "container", Value: fmt.Sprintf("tfb-%d", j)},
+								{Name: "pod", Value: fmt.Sprintf("pod-%d", j)},
 								{Name: "image", Value: "kruize/tfb-qrh:1.13.2.F_et17"},
 								{Name: "namespace", Value: fmt.Sprintf("msc-%d", k)},
 								{Name: "resource", Value: "cpu"},
@@ -456,6 +465,7 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 								{Name: "workload", Value: fmt.Sprintf("tfb-qrh-sample-%d", j)},
 								{Name: "workload_type", Value: "deployment"},
 								{Name: "container", Value: fmt.Sprintf("tfb-%d", j)},
+								{Name: "pod", Value: fmt.Sprintf("pod-%d", j)},
 								{Name: "workload_type", Value: "deployment"},
 								{Name: "image", Value: "kruize/tfb-qrh:1.13.2.F_et17"},
 								{Name: "namespace", Value: fmt.Sprintf("msc-%d", k)},
@@ -470,6 +480,7 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 								{Name: "workload", Value: fmt.Sprintf("tfb-qrh-sample-%d", j)},
 								{Name: "workload_type", Value: "deployment"},
 								{Name: "container", Value: fmt.Sprintf("tfb-%d", j)},
+								{Name: "pod", Value: fmt.Sprintf("pod-%d", j)},
 								{Name: "image", Value: "kruize/tfb-qrh:1.13.2.F_et17"},
 								{Name: "namespace", Value: fmt.Sprintf("msc-%d", k)},
 								{Name: "resource", Value: "memory"},
