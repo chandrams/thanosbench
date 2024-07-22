@@ -116,7 +116,7 @@ var (
 			72 * time.Hour,
 			72 * time.Hour,
 			52 * time.Hour,
-		}, 1, 1, 8),
+		}, 1, 1, 9),
 		"kruize-15d-1k": kruize([]time.Duration{
 			// 15 days, from newest to oldest.
 			2 * time.Hour,
@@ -128,7 +128,7 @@ var (
 			72 * time.Hour,
 			72 * time.Hour,
 			52 * time.Hour,
-		}, 20, 50, 8),
+		}, 20, 50, 9),
 		"kruize-15d-3k": kruize([]time.Duration{
 			// 15 days, from newest to oldest.
 			2 * time.Hour,
@@ -140,7 +140,7 @@ var (
 			72 * time.Hour,
 			72 * time.Hour,
 			52 * time.Hour,
-		}, 30, 100, 8),
+		}, 30, 100, 9),
 		"kruize-15d-5k": kruize([]time.Duration{
 			// 15 days, from newest to oldest.
 			2 * time.Hour,
@@ -152,7 +152,7 @@ var (
 			72 * time.Hour,
 			72 * time.Hour,
 			52 * time.Hour,
-		}, 50, 100, 8),
+		}, 50, 100, 9),
 		"kruize-15d-10k": kruize([]time.Duration{
 			// 15 days, from newest to oldest.
 			2 * time.Hour,
@@ -164,7 +164,7 @@ var (
 			72 * time.Hour,
 			72 * time.Hour,
 			52 * time.Hour,
-		}, 100, 100, 8),
+		}, 100, 100, 9),
 		"continuous-365d-tiny": continuous([]time.Duration{
 			// 1y days, from newest to oldest.
 			2 * time.Hour,
@@ -346,21 +346,21 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 	return func(ctx context.Context, maxTime model.TimeOrDurationValue, extLset labels.Labels, blockEncoder func(BlockSpec) error) error {
 
 		// Metric names
-		metrics := [8]string{"container_cpu_usage_seconds_total", "container_cpu_cfs_throttled_seconds_total", "kube_pod_container_resource_limits_cpu",
+		metrics := [9]string{"container_cpu_usage_seconds_total", "container_cpu_cfs_throttled_seconds_total", "kube_pod_container_resource_limits_cpu",
 					"kube_pod_container_resource_requests_cpu", "kube_pod_container_resource_limits_memory", "kube_pod_container_resource_requests_memory",
-					"container_memory_working_set_bytes", "container_memory_rss"}
+					"container_memory_working_set_bytes", "container_memory_rss", "kube_pod_status_phase"}
 	
 		max:= map[string]float64 {"container_cpu_usage_seconds_total": 28, "container_cpu_cfs_throttled_seconds_total": 2, "kube_pod_container_resource_limits_cpu": 32,
                                         "kube_pod_container_resource_requests_cpu":16, "kube_pod_container_resource_limits_memory": 2048, 
-					"kube_pod_container_resource_requests_memory": 1024, "container_memory_working_set_bytes": 2000, "container_memory_rss": 512}
+					"kube_pod_container_resource_requests_memory": 1024, "container_memory_working_set_bytes": 2000, "container_memory_rss": 512, "kube_pod_status_phase": 1}
 
 		min:= map[string]float64 {"container_cpu_usage_seconds_total": 2, "container_cpu_cfs_throttled_seconds_total": 0, "kube_pod_container_resource_limits_cpu": 4,
                                         "kube_pod_container_resource_requests_cpu":1, "kube_pod_container_resource_limits_memory": 1024, 
-					"kube_pod_container_resource_requests_memory": 512, "container_memory_working_set_bytes": 100, "container_memory_rss": 50}
+					"kube_pod_container_resource_requests_memory": 512, "container_memory_working_set_bytes": 100, "container_memory_rss": 50, "kube_pod_status_phase": 1}
 	
 		jitter:= map[string]float64 {"container_cpu_usage_seconds_total": 2, "container_cpu_cfs_throttled_seconds_total": 1, "kube_pod_container_resource_limits_cpu": 3,
                                         "kube_pod_container_resource_requests_cpu":2, "kube_pod_container_resource_limits_memory": 20, 
-					"kube_pod_container_resource_requests_memory": 10, "container_memory_working_set_bytes": 20, "container_memory_rss": 5}
+					"kube_pod_container_resource_requests_memory": 10, "container_memory_working_set_bytes": 20, "container_memory_rss": 5, "kube_pod_status_phase": 0}
 
 		// Align timestamps as Prometheus would do.
 		maxt := rangeForTimestamp(maxTime.PrometheusTimestamp(), durToMilis(2*time.Hour))
@@ -396,9 +396,16 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 					for i := 0; i < metricsPerApp; i++ {
 						
 						metric := metrics[i]
+	
 						max_value := max[metric] * 1000000
 						min_value := min[metric] * 1000000
 						jitter_value := jitter[metric] * 1000000
+
+						if metric == "kube_pod_status_phase" {
+							max_value = max[metric]
+							min_value = min[metric]
+							jitter_value = jitter[metric]
+						}
 
 						metric_type := Gauge
 						if strings.Contains(metric, "total") {
@@ -428,7 +435,23 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 							{Name: "pod", Value: fmt.Sprintf("pod-%d", j)},
 							{Name: "image", Value: "kruize/tfb-qrh:1.13.2.F_et17"},
 							{Name: "namespace", Value: fmt.Sprintf("msc-%d", k)},
+							
 						}
+
+						
+						if metrics[i] == "kube_pod_status_phase" {
+							s.Labels = labels.Labels{
+								{Name: "__name__", Value: "kube_pod_status_phase"},
+								{Name: "workload", Value: fmt.Sprintf("tfb-qrh-sample-%d", j)},
+								{Name: "workload_type", Value: "deployment"},
+								{Name: "container", Value: fmt.Sprintf("tfb-%d", j)},
+								{Name: "pod", Value: fmt.Sprintf("pod-%d", j)},
+								{Name: "image", Value: "kruize/tfb-qrh:1.13.2.F_et17"},
+								{Name: "namespace", Value: fmt.Sprintf("msc-%d", k)},
+								{Name: "phase", Value: "Running"},
+							}
+						}
+
 
 						if metrics[i] == "kube_pod_container_resource_limits_cpu" {
 							s.Labels = labels.Labels{
@@ -437,7 +460,6 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 								{Name: "workload_type", Value: "deployment"},
 								{Name: "container", Value: fmt.Sprintf("tfb-%d", j)},
 								{Name: "pod", Value: fmt.Sprintf("pod-%d", j)},
-								{Name: "workload_type", Value: "deployment"},
 								{Name: "image", Value: "kruize/tfb-qrh:1.13.2.F_et17"},
 								{Name: "namespace", Value: fmt.Sprintf("msc-%d", k)},
 								{Name: "resource", Value: "cpu"},
@@ -466,11 +488,10 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 								{Name: "workload_type", Value: "deployment"},
 								{Name: "container", Value: fmt.Sprintf("tfb-%d", j)},
 								{Name: "pod", Value: fmt.Sprintf("pod-%d", j)},
-								{Name: "workload_type", Value: "deployment"},
 								{Name: "image", Value: "kruize/tfb-qrh:1.13.2.F_et17"},
 								{Name: "namespace", Value: fmt.Sprintf("msc-%d", k)},
 								{Name: "resource", Value: "memory"},
-								{Name: "unit", Value: "bytes"},
+								{Name: "unit", Value: "byte"},
 							}
 						}
 
@@ -484,7 +505,7 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 								{Name: "image", Value: "kruize/tfb-qrh:1.13.2.F_et17"},
 								{Name: "namespace", Value: fmt.Sprintf("msc-%d", k)},
 								{Name: "resource", Value: "memory"},
-								{Name: "unit", Value: "bytes"},
+								{Name: "unit", Value: "byte"},
 							}
 						}
 					
