@@ -124,6 +124,70 @@ func (g *GaugeGen) At() (t int64, v float64) {
 
 func (g *GaugeGen) Err() error { return nil }
 
+type ConstGaugeGen struct {
+	changeInterval   time.Duration
+	interval         time.Duration
+	maxTime, minTime int64
+
+	min, max, jitter float64
+
+	v       float64
+	init    bool
+	elapsed int64
+
+	random *rand.Rand
+}
+
+func NewConstGaugeGen(random *rand.Rand, mint, maxt int64, opts Characteristics) *ConstGaugeGen {
+	return &ConstGaugeGen{
+		changeInterval: opts.ChangeInterval,
+		interval:       opts.ScrapeInterval,
+		max:            opts.Max,
+		min:            opts.Min,
+		minTime:        mint,
+		maxTime:        maxt,
+		jitter:         opts.Jitter,
+		random:         random,
+	}
+}
+
+func (g *ConstGaugeGen) Next() bool {
+	if g.minTime > g.maxTime {
+		return false
+	}
+	defer func() {
+		g.minTime += int64(g.interval.Seconds() * 1000)
+		g.elapsed += int64(g.interval.Seconds() * 1000)
+	}()
+
+	if !g.init {
+		if g.random.Intn(2) == 0 {
+			g.v = g.min
+		} else {
+			g.v = g.max
+		}
+
+		g.init = true
+	}
+
+	if g.jitter > 0 && g.elapsed >= int64(g.changeInterval.Seconds()*1000) {
+		if g.random.Intn(2) == 0 {
+			g.v = g.min
+		} else {
+			g.v = g.max
+		}
+
+		g.elapsed = 0
+	}
+	return true
+}
+
+func (g *ConstGaugeGen) At() (t int64, v float64) {
+	return g.minTime, g.v
+}
+
+func (g *ConstGaugeGen) Err() error { return nil }
+
 // TODO(bwplotka): Improve. Does not work well (: Too naive.
 // Add resets etc.
 type CounterGen struct {

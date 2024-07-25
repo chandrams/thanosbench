@@ -1,6 +1,7 @@
 package seriesgen
 
 import (
+	"fmt"
 	"math/rand"
 	"testing"
 	"time"
@@ -56,6 +57,34 @@ func TestGaugeGen(t *testing.T) {
 			init = true
 		}
 		lastT, lastV = g.At()
+	}
+	testutil.Equals(t, int64((24*time.Hour)/(15*time.Second)), samples)
+}
+
+func TestConstGaugeGen(t *testing.T) {
+	g := NewConstGaugeGen(rand.New(rand.NewSource(1)), 100, int64((24*time.Hour).Seconds())*1000, Characteristics{
+		Jitter:         1,
+		ScrapeInterval: 15 * time.Second,
+		Min:            0,
+		Max:            1,
+	})
+
+	lastV := float64(0)
+	lastT := int64(0)
+
+	init := false
+	samples := int64(0)
+	for g.Next() {
+		samples++
+		if init {
+			ts, val := g.At()
+			testutil.Assert(t, lastV <= val, "")
+			testutil.Assert(t, lastT <= ts, "")
+			fmt.Println(ts, val)
+			init = true
+		}
+		lastT, lastV = g.At()
+		fmt.Println(lastT, lastV)
 	}
 	testutil.Equals(t, int64((24*time.Hour)/(15*time.Second)), samples)
 }

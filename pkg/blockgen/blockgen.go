@@ -36,9 +36,10 @@ type BlockSpec struct {
 type GenType string
 
 const (
-	Random  GenType = "RANDOM"
-	Counter GenType = "COUNTER"
-	Gauge   GenType = "GAUGE"
+	Random     GenType = "RANDOM"
+	Counter    GenType = "COUNTER"
+	Gauge      GenType = "GAUGE"
+	ConstGauge GenType = "CONST_GAUGE"
 )
 
 func (g GenType) Create(random *rand.Rand, mint, maxt int64, opts seriesgen.Characteristics) (seriesgen.SeriesIterator, error) {
@@ -49,6 +50,8 @@ func (g GenType) Create(random *rand.Rand, mint, maxt int64, opts seriesgen.Char
 		return seriesgen.NewCounterGen(random, mint, maxt, opts), nil
 	case Gauge:
 		return seriesgen.NewGaugeGen(random, mint, maxt, opts), nil
+	case ConstGauge:
+		return seriesgen.NewConstGaugeGen(random, mint, maxt, opts), nil
 	default:
 		return nil, errors.Errorf("unknown type: %s", string(g))
 	}

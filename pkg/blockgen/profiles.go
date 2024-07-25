@@ -3,8 +3,8 @@ package blockgen
 import (
 	"context"
 	"fmt"
-	"time"
 	"strings"
+	"time"
 
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/timestamp"
@@ -347,25 +347,23 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 
 		// Metric names
 		metrics := [9]string{"container_cpu_usage_seconds_total", "container_cpu_cfs_throttled_seconds_total", "kube_pod_container_resource_limits_cpu",
-					"kube_pod_container_resource_requests_cpu", "kube_pod_container_resource_limits_memory", "kube_pod_container_resource_requests_memory",
-					"container_memory_working_set_bytes", "container_memory_rss", "kube_pod_status_phase"}
-	
-		max:= map[string]float64 {"container_cpu_usage_seconds_total": 28, "container_cpu_cfs_throttled_seconds_total": 2, "kube_pod_container_resource_limits_cpu": 32,
-                                        "kube_pod_container_resource_requests_cpu":16, "kube_pod_container_resource_limits_memory": 2048, 
-					"kube_pod_container_resource_requests_memory": 1024, "container_memory_working_set_bytes": 2000, "container_memory_rss": 512, "kube_pod_status_phase": 1}
+			"kube_pod_container_resource_requests_cpu", "kube_pod_container_resource_limits_memory", "kube_pod_container_resource_requests_memory",
+			"container_memory_working_set_bytes", "container_memory_rss", "kube_pod_status_phase"}
 
-		min:= map[string]float64 {"container_cpu_usage_seconds_total": 2, "container_cpu_cfs_throttled_seconds_total": 0, "kube_pod_container_resource_limits_cpu": 4,
-                                        "kube_pod_container_resource_requests_cpu":1, "kube_pod_container_resource_limits_memory": 1024, 
-					"kube_pod_container_resource_requests_memory": 512, "container_memory_working_set_bytes": 100, "container_memory_rss": 50, "kube_pod_status_phase": 1}
-	
-		jitter:= map[string]float64 {"container_cpu_usage_seconds_total": 2, "container_cpu_cfs_throttled_seconds_total": 1, "kube_pod_container_resource_limits_cpu": 3,
-                                        "kube_pod_container_resource_requests_cpu":2, "kube_pod_container_resource_limits_memory": 20, 
-					"kube_pod_container_resource_requests_memory": 10, "container_memory_working_set_bytes": 20, "container_memory_rss": 5, "kube_pod_status_phase": 0}
+		max := map[string]float64{"container_cpu_usage_seconds_total": 28, "container_cpu_cfs_throttled_seconds_total": 2, "kube_pod_container_resource_limits_cpu": 32,
+			"kube_pod_container_resource_requests_cpu": 16, "kube_pod_container_resource_limits_memory": 2048,
+			"kube_pod_container_resource_requests_memory": 1024, "container_memory_working_set_bytes": 2000, "container_memory_rss": 512, "kube_pod_status_phase": 1}
+
+		min := map[string]float64{"container_cpu_usage_seconds_total": 2, "container_cpu_cfs_throttled_seconds_total": 0, "kube_pod_container_resource_limits_cpu": 4,
+			"kube_pod_container_resource_requests_cpu": 1, "kube_pod_container_resource_limits_memory": 1024,
+			"kube_pod_container_resource_requests_memory": 512, "container_memory_working_set_bytes": 100, "container_memory_rss": 50, "kube_pod_status_phase": 1}
+
+		jitter := map[string]float64{"container_cpu_usage_seconds_total": 2, "container_cpu_cfs_throttled_seconds_total": 1, "kube_pod_container_resource_limits_cpu": 3,
+			"kube_pod_container_resource_requests_cpu": 2, "kube_pod_container_resource_limits_memory": 20,
+			"kube_pod_container_resource_requests_memory": 10, "container_memory_working_set_bytes": 20, "container_memory_rss": 5, "kube_pod_status_phase": 1}
 
 		// Align timestamps as Prometheus would do.
 		maxt := rangeForTimestamp(maxTime.PrometheusTimestamp(), durToMilis(2*time.Hour))
-
-	
 
 		for _, r := range ranges {
 			mint := maxt - durToMilis(r) + 1
@@ -394,9 +392,9 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 				for j := 0; j < apps; j++ {
 
 					for i := 0; i < metricsPerApp; i++ {
-						
+
 						metric := metrics[i]
-	
+
 						max_value := max[metric] * 1000000
 						min_value := min[metric] * 1000000
 						jitter_value := jitter[metric] * 1000000
@@ -411,7 +409,11 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 						if strings.Contains(metric, "total") {
 							metric_type = Counter
 						}
-	
+
+						if metric == "kube_pod_status_phase" {
+							metric_type = ConstGauge
+						}
+
 						// All our series are gauges.
 						common := SeriesSpec{
 							Targets: 1,
@@ -435,10 +437,8 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 							{Name: "pod", Value: fmt.Sprintf("pod-%d", j)},
 							{Name: "image", Value: "kruize/tfb-qrh:1.13.2.F_et17"},
 							{Name: "namespace", Value: fmt.Sprintf("msc-%d", k)},
-							
 						}
 
-						
 						if metrics[i] == "kube_pod_status_phase" {
 							s.Labels = labels.Labels{
 								{Name: "__name__", Value: "kube_pod_status_phase"},
@@ -451,7 +451,6 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 								{Name: "phase", Value: "Running"},
 							}
 						}
-
 
 						if metrics[i] == "kube_pod_container_resource_limits_cpu" {
 							s.Labels = labels.Labels{
@@ -508,7 +507,7 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 								{Name: "unit", Value: "byte"},
 							}
 						}
-					
+
 						s.MinTime = mint
 						s.MaxTime = maxt
 						b.Series = append(b.Series, s)
