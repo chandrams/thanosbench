@@ -105,6 +105,14 @@ var (
 			176 * time.Hour,
 			2 * time.Hour,
 		}, 1, 5),
+		"kruize-1d-tiny": kruize([]time.Duration{
+			// 15 days, from newest to oldest.
+			2 * time.Hour,
+			2 * time.Hour,
+			8 * time.Hour,
+			8 * time.Hour,
+			4 * time.Hour,
+		}, 1, 1, 9),
 		"kruize-15d-tiny": kruize([]time.Duration{
 			// 15 days, from newest to oldest.
 			2 * time.Hour,
@@ -394,10 +402,16 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 					for i := 0; i < metricsPerApp; i++ {
 
 						metric := metrics[i]
+							
+						max_value := max[metric]
+						min_value := min[metric]
+						jitter_value := jitter[metric]
 
-						max_value := max[metric] * 1000000
-						min_value := min[metric] * 1000000
-						jitter_value := jitter[metric] * 1000000
+						if strings.Contains(metric, "memory") {
+							max_value = max[metric] * 1000000
+							min_value = min[metric] * 1000000
+							jitter_value = jitter[metric] * 1000000
+						}
 
 						if metric == "kube_pod_status_phase" {
 							max_value = max[metric]
