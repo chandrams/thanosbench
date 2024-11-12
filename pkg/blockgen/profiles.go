@@ -107,13 +107,37 @@ var (
 			2 * time.Hour,
 		}, 1, 5),
 		"kruize-1d-tiny": kruize([]time.Duration{
-			// 15 days, from newest to oldest.
+			// 1 day, from newest to oldest.
 			2 * time.Hour,
 			2 * time.Hour,
 			8 * time.Hour,
 			8 * time.Hour,
 			4 * time.Hour,
-		}, 1, 1, 13),
+		}, 1, 1, 14),
+		"kruize-1d-100": kruize([]time.Duration{
+			// 1 day, from newest to oldest.
+			2 * time.Hour,
+			2 * time.Hour,
+			8 * time.Hour,
+			8 * time.Hour,
+			4 * time.Hour,
+		}, 10, 10, 14),
+		"kruize-1d-1k": kruize([]time.Duration{
+			// 1 day, from newest to oldest.
+			2 * time.Hour,
+			2 * time.Hour,
+			8 * time.Hour,
+			8 * time.Hour,
+			4 * time.Hour,
+		}, 20, 50, 14),
+		"kruize-1d-5k": kruize([]time.Duration{
+			// 1 day, from newest to oldest.
+			2 * time.Hour,
+			2 * time.Hour,
+			8 * time.Hour,
+			8 * time.Hour,
+			4 * time.Hour,
+		}, 100, 50, 14),
 		"kruize-15d-tiny": kruize([]time.Duration{
 			// 15 days, from newest to oldest.
 			2 * time.Hour,
@@ -125,7 +149,7 @@ var (
 			72 * time.Hour,
 			72 * time.Hour,
 			52 * time.Hour,
-		}, 1, 1, 13),
+		}, 1, 1, 14),
 		"kruize-15d-1k": kruize([]time.Duration{
 			// 15 days, from newest to oldest.
 			2 * time.Hour,
@@ -137,7 +161,7 @@ var (
 			72 * time.Hour,
 			72 * time.Hour,
 			52 * time.Hour,
-		}, 20, 50, 13),
+		}, 20, 50, 14),
 		"kruize-15d-3k": kruize([]time.Duration{
 			// 15 days, from newest to oldest.
 			2 * time.Hour,
@@ -149,7 +173,7 @@ var (
 			72 * time.Hour,
 			72 * time.Hour,
 			52 * time.Hour,
-		}, 30, 100, 13),
+		}, 30, 100, 14),
 		"kruize-15d-5k": kruize([]time.Duration{
 			// 15 days, from newest to oldest.
 			2 * time.Hour,
@@ -161,7 +185,7 @@ var (
 			72 * time.Hour,
 			72 * time.Hour,
 			52 * time.Hour,
-		}, 50, 100, 13),
+		}, 50, 100, 14),
 		"kruize-15d-10k": kruize([]time.Duration{
 			// 15 days, from newest to oldest.
 			2 * time.Hour,
@@ -173,7 +197,7 @@ var (
 			72 * time.Hour,
 			72 * time.Hour,
 			52 * time.Hour,
-		}, 100, 100, 13),
+		}, 100, 100, 14),
 		"continuous-365d-tiny": continuous([]time.Duration{
 			// 1y days, from newest to oldest.
 			2 * time.Hour,
@@ -355,22 +379,22 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 	return func(ctx context.Context, maxTime model.TimeOrDurationValue, extLset labels.Labels, blockEncoder func(BlockSpec) error) error {
 
 		// Metric names
-		metrics := [13]string{"container_cpu_usage_seconds_total", "container_cpu_cfs_throttled_seconds_total", "kube_pod_container_resource_limits_cpu",
+		metrics := [14]string{"container_cpu_usage_seconds_total", "container_cpu_cfs_throttled_seconds_total", "kube_pod_container_resource_limits_cpu",
 			"kube_pod_container_resource_requests_cpu", "kube_pod_container_resource_limits_memory", "kube_pod_container_resource_requests_memory",
 			"container_memory_working_set_bytes", "container_memory_rss", "kube_pod_status_phase", "up", "kube_namespace_status_phase",
-			"kube_pod_container_info", "kube_pod_owner"}
+			"kube_pod_container_info", "kube_pod_owner", "namespace_workload_pod:kube_pod_owner:relabel"}
 
 		max := map[string]float64{"container_cpu_usage_seconds_total": 28, "container_cpu_cfs_throttled_seconds_total": 2, "kube_pod_container_resource_limits_cpu": 32,
 			"kube_pod_container_resource_requests_cpu": 16, "kube_pod_container_resource_limits_memory": 2048,
-			"kube_pod_container_resource_requests_memory": 1024, "container_memory_working_set_bytes": 2000, "container_memory_rss": 512, "kube_pod_status_phase": 1, "up": 1, "kube_namespace_status_phase": 1, "kube_pod_container_info": 1, "kube_pod_owner": 1}
+			"kube_pod_container_resource_requests_memory": 1024, "container_memory_working_set_bytes": 2000, "container_memory_rss": 512, "kube_pod_status_phase": 1, "up": 1, "kube_namespace_status_phase": 1, "kube_pod_container_info": 1, "kube_pod_owner": 1, "namespace_workload_pod:kube_pod_owner:relabel": 1}
 
 		min := map[string]float64{"container_cpu_usage_seconds_total": 2, "container_cpu_cfs_throttled_seconds_total": 0, "kube_pod_container_resource_limits_cpu": 4,
 			"kube_pod_container_resource_requests_cpu": 1, "kube_pod_container_resource_limits_memory": 1024,
-			"kube_pod_container_resource_requests_memory": 512, "container_memory_working_set_bytes": 100, "container_memory_rss": 50, "kube_pod_status_phase": 1, "up": 1, "kube_namespace_status_phase": 1, "kube_pod_container_info": 1, "kube_pod_owner": 1}
+			"kube_pod_container_resource_requests_memory": 512, "container_memory_working_set_bytes": 100, "container_memory_rss": 50, "kube_pod_status_phase": 1, "up": 1, "kube_namespace_status_phase": 1, "kube_pod_container_info": 1, "kube_pod_owner": 1, "namespace_workload_pod:kube_pod_owner:relabel": 1}
 
 		jitter := map[string]float64{"container_cpu_usage_seconds_total": 2, "container_cpu_cfs_throttled_seconds_total": 1, "kube_pod_container_resource_limits_cpu": 3,
 			"kube_pod_container_resource_requests_cpu": 2, "kube_pod_container_resource_limits_memory": 20,
-			"kube_pod_container_resource_requests_memory": 10, "container_memory_working_set_bytes": 20, "container_memory_rss": 5, "kube_pod_status_phase": 1, "up": 1, "kube_namespace_status_phase": 1, "kube_pod_container_info": 1, "kube_pod_owner": 1}
+			"kube_pod_container_resource_requests_memory": 10, "container_memory_working_set_bytes": 20, "container_memory_rss": 5, "kube_pod_status_phase": 1, "up": 1, "kube_namespace_status_phase": 1, "kube_pod_container_info": 1, "kube_pod_owner": 1, "namespace_workload_pod:kube_pod_owner:relabel": 1}
 
 		// Align timestamps as Prometheus would do.
 		maxt := rangeForTimestamp(maxTime.PrometheusTimestamp(), durToMilis(2*time.Hour))
@@ -402,6 +426,9 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 
 			for k := 0; k < namespaces; k++ {
 				for j := 0; j < apps; j++ {
+					rand.Seed(time.Now().UnixNano())
+					pod_rand := rand.Intn(1000000)
+					node_rand := rand.Intn(10)
 
 					for i := 0; i < metricsPerApp; i++ {
 
@@ -417,7 +444,7 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 							jitter_value = jitter[metric] * 1000000
 						}
 
-						if metric == "kube_pod_status_phase" || metric == "kube_namespace_status_phase" || metric == "up" {
+						if metric == "kube_pod_status_phase" || metric == "kube_namespace_status_phase" || metric == "up" || metric == "namespace_workload_pod:kube_pod_owner:relabel" {
 							max_value = max[metric]
 							min_value = min[metric]
 							jitter_value = jitter[metric]
@@ -428,7 +455,7 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 							metric_type = Counter
 						}
 
-						if metric == "kube_pod_status_phase" || metric == "kube_namespace_status_phase" || metric == "up" || metric == "kube_pod_container_info" || metric == "kube_pod_owner" {
+						if metric == "kube_pod_status_phase" || metric == "kube_namespace_status_phase" || metric == "up" || metric == "kube_pod_container_info" || metric == "kube_pod_owner" || metric == "namespace_workload_pod:kube_pod_owner:relabel" {
 							metric_type = ConstGauge
 						}
 
@@ -445,11 +472,6 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 							},
 						}
 
-						rand.Seed(time.Now().UnixNano())
-						pod_rand := rand.Intn(1000000)
-
-						node_rand := rand.Intn(10)
-
 						s := common
 
 						s.Labels = labels.Labels{
@@ -463,9 +485,20 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 							{Name: "namespace", Value: fmt.Sprintf("msc-%d", k)},
 						}
 
+						if metrics[i] == "namespace_workload_pod:kube_pod_owner:relabel" {
+							s.Labels = labels.Labels{
+								{Name: "__name__", Value: metric},
+								{Name: "workload", Value: fmt.Sprintf("tfb-qrh-sample-%d", j)},
+								{Name: "workload_type", Value: "deployment"},
+								{Name: "pod", Value: fmt.Sprintf("tfb-qrh-sample-%d%d-%d", k, j, pod_rand)},
+								{Name: "namespace", Value: fmt.Sprintf("msc-%d", k)},
+								// {Name: "prometheus_replica", Value: "prometheus-k8s-0"},
+							}
+						}
+
 						if metrics[i] == "kube_pod_container_info" {
 							s.Labels = labels.Labels{
-								{Name: "__name__", Value: "kube_pod_status_phase"},
+								{Name: "__name__", Value: metric},
 								{Name: "workload", Value: fmt.Sprintf("tfb-qrh-sample-%d", j)},
 								{Name: "workload_type", Value: "deployment"},
 								{Name: "container", Value: fmt.Sprintf("tfb-%d", j)},
@@ -473,12 +506,13 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 								{Name: "node", Value: fmt.Sprintf("node-%d-%d-%d", k, j, node_rand)},
 								{Name: "image", Value: "kruize/tfb-qrh:1.13.2.F_et17"},
 								{Name: "namespace", Value: fmt.Sprintf("msc-%d", k)},
+								// {Name: "prometheus_replica", Value: "prometheus-k8s-0"},
 							}
 						}
 
 						if metrics[i] == "kube_pod_owner" {
 							s.Labels = labels.Labels{
-								{Name: "__name__", Value: "kube_pod_status_phase"},
+								{Name: "__name__", Value: metric},
 								{Name: "workload", Value: fmt.Sprintf("tfb-qrh-sample-%d", j)},
 								{Name: "workload_type", Value: "deployment"},
 								{Name: "container", Value: fmt.Sprintf("tfb-%d", j)},
@@ -493,7 +527,7 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 
 						if metrics[i] == "kube_pod_status_phase" {
 							s.Labels = labels.Labels{
-								{Name: "__name__", Value: "kube_pod_status_phase"},
+								{Name: "__name__", Value: metric},
 								{Name: "workload", Value: fmt.Sprintf("tfb-qrh-sample-%d", j)},
 								{Name: "workload_type", Value: "deployment"},
 								{Name: "container", Value: fmt.Sprintf("tfb-%d", j)},
@@ -507,7 +541,7 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 
 						if metrics[i] == "kube_namespace_status_phase" {
 							s.Labels = labels.Labels{
-								{Name: "__name__", Value: "kube_namespace_status_phase"},
+								{Name: "__name__", Value: metric},
 								{Name: "workload", Value: fmt.Sprintf("tfb-qrh-sample-%d", j)},
 								{Name: "workload_type", Value: "deployment"},
 								{Name: "container", Value: fmt.Sprintf("tfb-%d", j)},
