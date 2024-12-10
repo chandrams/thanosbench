@@ -485,71 +485,75 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 							{Name: "namespace", Value: fmt.Sprintf("msc-%d", k)},
 						}
 
-						if metrics[i] == "namespace_workload_pod:kube_pod_owner:relabel" {
-							s.Labels = labels.Labels{
-								{Name: "__name__", Value: metric},
-								{Name: "workload", Value: fmt.Sprintf("tfb-qrh-sample-%d", j)},
-								{Name: "workload_type", Value: "deployment"},
-								{Name: "pod", Value: fmt.Sprintf("tfb-qrh-sample-%d%d-%d", k, j, pod_rand)},
-								{Name: "namespace", Value: fmt.Sprintf("msc-%d", k)},
-								// {Name: "prometheus_replica", Value: "prometheus-k8s-0"},
+
+						if i == 0 {
+							if metrics[i] == "namespace_workload_pod:kube_pod_owner:relabel" {
+								s.Labels = labels.Labels{
+									{Name: "__name__", Value: metric},
+									{Name: "workload", Value: fmt.Sprintf("tfb-qrh-sample-%d", j)},
+									{Name: "workload_type", Value: "deployment"},
+									{Name: "pod", Value: fmt.Sprintf("tfb-qrh-sample-%d%d-%d", k, j, pod_rand)},
+									{Name: "namespace", Value: fmt.Sprintf("msc-%d", k)},
+									// {Name: "prometheus_replica", Value: "prometheus-k8s-0"},
+								}
+							}
+
+							if metrics[i] == "kube_pod_container_info" {
+								s.Labels = labels.Labels{
+									{Name: "__name__", Value: metric},
+									{Name: "workload", Value: fmt.Sprintf("tfb-qrh-sample-%d", j)},
+									{Name: "workload_type", Value: "deployment"},
+									{Name: "container", Value: fmt.Sprintf("tfb-%d", j)},
+									{Name: "pod", Value: fmt.Sprintf("tfb-qrh-sample-%d%d-%d", k, j, pod_rand)},
+									{Name: "node", Value: fmt.Sprintf("node-%d-%d-%d", k, j, node_rand)},
+									{Name: "image", Value: "kruize/tfb-qrh:1.13.2.F_et17"},
+									{Name: "namespace", Value: fmt.Sprintf("msc-%d", k)},
+								}
+							}
+
+							/*if metrics[i] == "kube_pod_owner" {
+								s.Labels = labels.Labels{
+									{Name: "__name__", Value: metric},
+									{Name: "workload", Value: fmt.Sprintf("tfb-qrh-sample-%d", j)},
+									{Name: "workload_type", Value: "deployment"},
+									{Name: "container", Value: fmt.Sprintf("tfb-%d", j)},
+									{Name: "pod", Value: fmt.Sprintf("tfb-qrh-sample-%d%d-%d", k, j, pod_rand)},
+									{Name: "node", Value: fmt.Sprintf("node-%d-%d-%d", k, j, node_rand)},
+									{Name: "image", Value: "kruize/tfb-qrh:1.13.2.F_et17"},
+									{Name: "namespace", Value: fmt.Sprintf("msc-%d", k)},
+									{Name: "owner_kind", Value: "ReplicaSet"},
+									{Name: "owner_name", Value: fmt.Sprintf("tfb-qrh-sample-%d%d", k, j)},
+								}
+							}*/
+
+							if metrics[i] == "kube_pod_status_phase" {
+								s.Labels = labels.Labels{
+									{Name: "__name__", Value: metric},
+									{Name: "workload", Value: fmt.Sprintf("tfb-qrh-sample-%d", j)},
+									{Name: "workload_type", Value: "deployment"},
+									{Name: "container", Value: fmt.Sprintf("tfb-%d", j)},
+									{Name: "pod", Value: fmt.Sprintf("tfb-qrh-sample-%d%d-%d", k, j, pod_rand)},
+									{Name: "node", Value: fmt.Sprintf("node-%d-%d-%d", k, j, node_rand)},
+									{Name: "image", Value: "kruize/tfb-qrh:1.13.2.F_et17"},
+									{Name: "namespace", Value: fmt.Sprintf("msc-%d", k)},
+									{Name: "phase", Value: "Running"},
+								}
 							}
 						}
 
-						if metrics[i] == "kube_pod_container_info" {
-							s.Labels = labels.Labels{
-								{Name: "__name__", Value: metric},
-								{Name: "workload", Value: fmt.Sprintf("tfb-qrh-sample-%d", j)},
-								{Name: "workload_type", Value: "deployment"},
-								{Name: "container", Value: fmt.Sprintf("tfb-%d", j)},
-								{Name: "pod", Value: fmt.Sprintf("tfb-qrh-sample-%d%d-%d", k, j, pod_rand)},
-								{Name: "node", Value: fmt.Sprintf("node-%d-%d-%d", k, j, node_rand)},
-								{Name: "image", Value: "kruize/tfb-qrh:1.13.2.F_et17"},
-								{Name: "namespace", Value: fmt.Sprintf("msc-%d", k)},
-								// {Name: "prometheus_replica", Value: "prometheus-k8s-0"},
-							}
-						}
-
-						if metrics[i] == "kube_pod_owner" {
-							s.Labels = labels.Labels{
-								{Name: "__name__", Value: metric},
-								{Name: "workload", Value: fmt.Sprintf("tfb-qrh-sample-%d", j)},
-								{Name: "workload_type", Value: "deployment"},
-								{Name: "container", Value: fmt.Sprintf("tfb-%d", j)},
-								{Name: "pod", Value: fmt.Sprintf("tfb-qrh-sample-%d%d-%d", k, j, pod_rand)},
-								{Name: "node", Value: fmt.Sprintf("node-%d-%d-%d", k, j, node_rand)},
-								{Name: "image", Value: "kruize/tfb-qrh:1.13.2.F_et17"},
-								{Name: "namespace", Value: fmt.Sprintf("msc-%d", k)},
-								{Name: "owner_kind", Value: "ReplicaSet"},
-								{Name: "owner_name", Value: fmt.Sprintf("tfb-qrh-sample-%d%d", k, j)},
-							}
-						}
-
-						if metrics[i] == "kube_pod_status_phase" {
-							s.Labels = labels.Labels{
-								{Name: "__name__", Value: metric},
-								{Name: "workload", Value: fmt.Sprintf("tfb-qrh-sample-%d", j)},
-								{Name: "workload_type", Value: "deployment"},
-								{Name: "container", Value: fmt.Sprintf("tfb-%d", j)},
-								{Name: "pod", Value: fmt.Sprintf("tfb-qrh-sample-%d%d-%d", k, j, pod_rand)},
-								{Name: "node", Value: fmt.Sprintf("node-%d-%d-%d", k, j, node_rand)},
-								{Name: "image", Value: "kruize/tfb-qrh:1.13.2.F_et17"},
-								{Name: "namespace", Value: fmt.Sprintf("msc-%d", k)},
-								{Name: "phase", Value: "Running"},
-							}
-						}
-
-						if metrics[i] == "kube_namespace_status_phase" {
-							s.Labels = labels.Labels{
-								{Name: "__name__", Value: metric},
-								{Name: "workload", Value: fmt.Sprintf("tfb-qrh-sample-%d", j)},
-								{Name: "workload_type", Value: "deployment"},
-								{Name: "container", Value: fmt.Sprintf("tfb-%d", j)},
-								{Name: "pod", Value: fmt.Sprintf("tfb-qrh-sample-%d%d-%d", k, j, pod_rand)},
-								{Name: "node", Value: fmt.Sprintf("node-%d-%d-%d", k, j, node_rand)},
-								{Name: "image", Value: "kruize/tfb-qrh:1.13.2.F_et17"},
-								{Name: "namespace", Value: fmt.Sprintf("msc-%d", k)},
-								{Name: "phase", Value: "Active"},
+						if j == 0 {
+							if metrics[i] == "kube_namespace_status_phase" {
+								s.Labels = labels.Labels{
+									{Name: "__name__", Value: metric},
+									{Name: "workload", Value: fmt.Sprintf("tfb-qrh-sample-%d", j)},
+									{Name: "workload_type", Value: "deployment"},
+									{Name: "container", Value: fmt.Sprintf("tfb-%d", j)},
+									{Name: "pod", Value: fmt.Sprintf("tfb-qrh-sample-%d%d-%d", k, j, pod_rand)},
+									{Name: "node", Value: fmt.Sprintf("node-%d-%d-%d", k, j, node_rand)},
+									{Name: "image", Value: "kruize/tfb-qrh:1.13.2.F_et17"},
+									{Name: "namespace", Value: fmt.Sprintf("msc-%d", k)},
+									{Name: "phase", Value: "Active"},
+								}
 							}
 						}
 
@@ -621,7 +625,7 @@ func kruize(ranges []time.Duration, namespaces int, apps int, metricsPerApp int)
 							}
 							up = 0
 						}
-
+						
 						s.MinTime = mint
 						s.MaxTime = maxt
 						b.Series = append(b.Series, s)
