@@ -160,6 +160,11 @@ make teardown
 echo ""
 
 echo ""
+echo "Creating namespace thanos-bench ..."
+oc create namespace thanos-bench
+echo ""
+
+echo ""
 echo "Setup minio object storage ..."
 make objstore
 echo ""
